@@ -1,0 +1,8 @@
+OWNER
+snow
+
+CONTRIBUTORS
+jonyleeson (Original WzLib)
+haha01haha01(HaRepacker)
+haha01haha01(Updates)
+Xterminator
