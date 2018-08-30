@@ -1,4 +1,4 @@
 ﻿namespace MapleLib.WzLib {
-	public interface IExtended {
-	}
+    public interface IExtended {
+    }
 }

@@ -1,76 +1,76 @@
-﻿using System.Collections.Generic;
+﻿using MapleLib.WzLib.Util;
+using System.Collections.Generic;
 using System.IO;
-using MapleLib.WzLib.Util;
 
 namespace MapleLib.WzLib {
-	/// <summary>
-	/// A class that parses and contains the data of a wz list file
-	/// </summary>
-	public class WzListFile : AWzObject {
-		#region Fields
+    /// <summary>
+    /// A class that parses and contains the data of a wz list file
+    /// </summary>
+    public class WzListFile : AWzObject {
+        #region Fields
 
-		internal byte[] mWzFileBytes;
-		internal List<string> mListEntries = new List<string>();
-		internal string mName = "";
-		internal byte[] mWzIv;
-		internal WzMapleVersion mVersion;
+        internal byte[] mWzFileBytes;
+        internal List<string> mListEntries = new List<string>();
+        internal string mName = "";
+        internal byte[] mWzIv;
+        internal WzMapleVersion mVersion;
 
-		#endregion
+        #endregion
 
-		/// <summary>
-		/// Name of the WzListFile
-		/// </summary>
-		public override string Name { get { return mName; } set { mName = value; } }
+        /// <summary>
+        /// Name of the WzListFile
+        /// </summary>
+        public override string Name { get { return mName; } set { mName = value; } }
 
-		/// <summary>
-		/// The entries in the list wz file
-		/// </summary>
-		public string[] WzListEntries { get { return mListEntries.ToArray(); } }
+        /// <summary>
+        /// The entries in the list wz file
+        /// </summary>
+        public string[] WzListEntries { get { return mListEntries.ToArray(); } }
 
-		/// <summary>
-		/// The WzObjectType of the file
-		/// </summary>
-		public override WzObjectType ObjectType { get { return WzObjectType.File; } }
+        /// <summary>
+        /// The WzObjectType of the file
+        /// </summary>
+        public override WzObjectType ObjectType { get { return WzObjectType.File; } }
 
-		public override AWzObject Parent { get { return null; } internal set { } }
+        public override AWzObject Parent { get { return null; } internal set { } }
 
-		public override void Dispose() {
-			mWzFileBytes = null;
-			mName = null;
-			mListEntries.Clear();
-			mListEntries = null;
-		}
+        public override void Dispose() {
+            mWzFileBytes = null;
+            mName = null;
+            mListEntries.Clear();
+            mListEntries = null;
+        }
 
-		/// <summary>
-		/// Open a wz list file from a file on the disk
-		/// </summary>
-		/// <param name="pFilePath">Path to the wz file</param>
-		public WzListFile(string pFilePath, WzMapleVersion pVersion) {
-			mName = Path.GetFileName(pFilePath);
-			mWzIv = WzTool.GetIvByMapleVersion(pVersion);
-			mVersion = pVersion;
-			mWzFileBytes = File.ReadAllBytes(pFilePath);
-		}
+        /// <summary>
+        /// Open a wz list file from a file on the disk
+        /// </summary>
+        /// <param name="pFilePath">Path to the wz file</param>
+        public WzListFile(string pFilePath, WzMapleVersion pVersion) {
+            mName = Path.GetFileName(pFilePath);
+            mWzIv = WzTool.GetIvByMapleVersion(pVersion);
+            mVersion = pVersion;
+            mWzFileBytes = File.ReadAllBytes(pFilePath);
+        }
 
-		/// <summary>
-		/// Open a wz list file from an array of bytes in the memory
-		/// </summary>
-		/// <param name="pFileBytes">The wz file in the memory</param>
-		public WzListFile(byte[] pFileBytes, byte[] pWzIv) {
-			mWzFileBytes = pFileBytes;
-			mWzIv = pWzIv;
-		}
+        /// <summary>
+        /// Open a wz list file from an array of bytes in the memory
+        /// </summary>
+        /// <param name="pFileBytes">The wz file in the memory</param>
+        public WzListFile(byte[] pFileBytes, byte[] pWzIv) {
+            mWzFileBytes = pFileBytes;
+            mWzIv = pWzIv;
+        }
 
-		public WzListFile(WzMapleVersion pVersion, string pName) {
-			mName = pName;
-			mVersion = pVersion;
-			mWzIv = WzTool.GetIvByMapleVersion(pVersion);
-		}
+        public WzListFile(WzMapleVersion pVersion, string pName) {
+            mName = pName;
+            mVersion = pVersion;
+            mWzIv = WzTool.GetIvByMapleVersion(pVersion);
+        }
 
-		/// <summary>
-		/// Parses the wz list file
-		/// </summary>
-		public void ParseWzFile() {
+        /// <summary>
+        /// Parses the wz list file
+        /// </summary>
+        public void ParseWzFile() {
             using (WzBinaryReader wzParser = new WzBinaryReader(new MemoryStream(mWzFileBytes), mWzIv)) {
                 while (wzParser.PeekChar() != -1) {
                     int Len = wzParser.ReadInt32();
@@ -85,16 +85,16 @@ namespace MapleLib.WzLib {
                     mListEntries.Add(Decrypted);
                 }
             }
-		}
+        }
 
-		internal void SaveToDisk(string pPath) {
-			WzBinaryWriter wzWriter = new WzBinaryWriter(File.Create(pPath), mWzIv);
-			foreach (string entry in mListEntries) {
-				string newEntry = entry + "\0";
-				wzWriter.Write(newEntry.Length);
-				wzWriter.Write(newEntry, true, true);
-			}
-			wzWriter.Close();
-		}
-	}
+        internal void SaveToDisk(string pPath) {
+            WzBinaryWriter wzWriter = new WzBinaryWriter(File.Create(pPath), mWzIv);
+            foreach (string entry in mListEntries) {
+                string newEntry = entry + "\0";
+                wzWriter.Write(newEntry.Length);
+                wzWriter.Write(newEntry, true, true);
+            }
+            wzWriter.Close();
+        }
+    }
 }
