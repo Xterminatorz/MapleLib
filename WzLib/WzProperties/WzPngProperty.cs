@@ -290,6 +290,22 @@ namespace MapleLib.WzLib.WzProperties {
                     Marshal.Copy(argb2, 0, bmpData.Scan0, argb2.Length);
                     bmp.UnlockBits(bmpData);
                     break;
+                case 257:
+                    bmp = new Bitmap(mWidth, mHeight, PixelFormat.Format16bppArgb1555);
+                    bmpData = bmp.LockBits(new Rectangle(0, 0, mWidth, mHeight), ImageLockMode.WriteOnly, PixelFormat.Format16bppArgb1555);
+                    uncompressedSize = mWidth * mHeight * 2;
+                    decBuf = new byte[uncompressedSize];
+                    zlib.Read(decBuf, 0, decBuf.Length);
+                    int stride = bmp.Width * 2;
+                    if (bmpData.Stride == stride) {
+                        Marshal.Copy(decBuf, 0, bmpData.Scan0, decBuf.Length);
+                    } else {
+                        for (int y3 = 0; y3 < bmpData.Height; y3++) {
+                            Marshal.Copy(decBuf, stride * y3, bmpData.Scan0 + bmpData.Stride * y3, stride);
+                        }
+                    }
+                    bmp.UnlockBits(bmpData);
+                    break;
                 case 513:
                     bmp = new Bitmap(mWidth, mHeight, PixelFormat.Format16bppRgb565);
                     bmpData = bmp.LockBits(new Rectangle(0, 0, mWidth, mHeight), ImageLockMode.WriteOnly, PixelFormat.Format16bppRgb565);
@@ -299,7 +315,6 @@ namespace MapleLib.WzLib.WzProperties {
                     Marshal.Copy(decBuf, 0, bmpData.Scan0, decBuf.Length);
                     bmp.UnlockBits(bmpData);
                     break;
-
                 case 517:
                     bmp = new Bitmap(mWidth, mHeight);
                     uncompressedSize = mWidth * mHeight / 128;
