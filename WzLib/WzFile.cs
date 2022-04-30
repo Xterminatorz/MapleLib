@@ -15,11 +15,14 @@ namespace MapleLib.WzLib {
 
         internal string mPath;
         internal WzHeader mHeader;
-        internal short mVersion;
+        internal ushort mVersion;
         internal uint mVersionHash;
         internal short mFileVersion;
+        internal const ushort wzVersionHeader64bit_start = 777;
         internal WzMapleVersion mMapleVersion;
         internal List<WzFile> fileExts;
+        internal bool b64BitClient = false; // KMS update after Q4 2021, ver 1.2.357
+        private bool b64BitClient_withVerHeader = false;
 
         #endregion
 
@@ -140,9 +143,12 @@ namespace MapleLib.WzLib {
             }
             mReader.ReadBytes(bytesToRead);
             mReader.Header = Header;
-            mVersion = mReader.ReadInt16();
+            Check64BitClient(mReader);
+            mVersion = b64BitClient && !b64BitClient_withVerHeader ? wzVersionHeader64bit_start : mReader.ReadUInt16();
+
             if (mFileVersion == -1) {
-                for (int j = 0; j < short.MaxValue; j++) {
+                int j = b64BitClient ? wzVersionHeader64bit_start : 0;
+                for (; j < short.MaxValue; j++) {
                     mFileVersion = (short)j;
                     if (parentFile != null)
                         mFileVersion = parentFile.mFileVersion;
@@ -192,6 +198,46 @@ namespace MapleLib.WzLib {
             ParseDirectory(parentFile);
         }
 
+        /// <summary>
+        /// encVer detecting:
+        /// Since KMST1132 (GMSv230, 2022/02/09), wz removed the 2-byte encVer at 0x3C, and use a fixed encVer 777.
+        /// Here we try to read the first 2 bytes from data part (0x3C) and guess if it looks like an encVer.
+        ///
+        /// Credit: WzComparerR2 project
+        /// </summary>
+        private void Check64BitClient(WzBinaryReader reader) {
+            if (this.Header.FSize >= 2) {
+                ushort wzVersionHeader = reader.ReadUInt16();
+                if (wzVersionHeader > 0xff) {
+                    b64BitClient = true;
+                } else if (wzVersionHeader == 0x80) {
+                    // there's an exceptional case that the first field of data part is a compressed int which determines the property count,
+                    // if the value greater than 127 and also to be a multiple of 256, the first 5 bytes will become to
+                    // 80 00 xx xx xx
+                    // so we additional check the int value, at most time the child node count in a WzFile won't greater than 65536 (0xFFFF).
+                    if (this.Header.FSize >= 5) {
+                        reader.BaseStream.Position = this.mHeader.FStart; // go back to 0x3C
+                        int propCount = reader.ReadCompressedInt();
+                        if (propCount > 0 && (propCount & 0xFF) == 0 && propCount <= 0xFFFF) {
+                            b64BitClient = true;
+                        }
+                    }
+                } else if (wzVersionHeader == 0x21) // or 33
+                {
+                    b64BitClient = true;
+                    // but read the header
+                    // the latest KMS seems to include this back in again.. damn 
+                    this.b64BitClient_withVerHeader = true; // ugly hack, but until i've found a better way without breaking compatibility of old WZs.
+                }
+            } else {
+                // Obviously, if data part have only 1 byte, encVer must be deleted.
+                b64BitClient = true;
+            }
+
+            // reset position
+            reader.BaseStream.Position = this.Header.FStart;
+        }
+
         private static uint GetVersionHash(int pEncVer, int pRealVer) {
             int EncryptedVersionNumber = pEncVer;
             int VersionNumber = pRealVer;
@@ -206,6 +252,8 @@ namespace MapleLib.WzLib {
             for (int i = 0; i < l; i++) {
                 VersionHash = (32 * VersionHash) + VersionNumberStr[i] + 1;
             }
+            if (pEncVer == wzVersionHeader64bit_start)
+                return (uint)VersionHash;
             a = (VersionHash >> 24) & 0xFF;
             b = (VersionHash >> 16) & 0xFF;
             c = (VersionHash >> 8) & 0xFF;
