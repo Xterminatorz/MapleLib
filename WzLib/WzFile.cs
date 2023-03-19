@@ -20,7 +20,7 @@ namespace MapleLib.WzLib {
         internal short mFileVersion;
         internal const ushort wzVersionHeader64bit_start = 777;
         internal WzMapleVersion mMapleVersion;
-        internal List<WzFile> fileExts;
+        internal List<WzFile> fileExts = new List<WzFile>();
         internal bool b64BitClient = false; // KMS update after Q4 2021, ver 1.2.357
         private bool b64BitClient_withVerHeader = false;
 
@@ -44,9 +44,11 @@ namespace MapleLib.WzLib {
 
         public WzMapleVersion MapleVersion { get { return mMapleVersion; } }
 
-        public override AWzObject Parent { get { return null; } internal set { } }
+        // Used to determine external WZ file as a directory
+        public Boolean SubFile { get; set; }
 
         public override void Dispose() {
+            base.Dispose();
             if (mReader != null)
                 mReader.Close();
             Header = null;
@@ -111,6 +113,7 @@ namespace MapleLib.WzLib {
         public void ParseWzFile() {
             if (mMapleVersion == WzMapleVersion.GENERATE)
                 throw new InvalidOperationException("Cannot call ParseWzFile() if WZ file type is GENERATE");
+            getWzExtensionFiles();
             ParseMainWzDirectory();
             if (fileExts != null) {
                 foreach (WzFile f in fileExts)
@@ -129,7 +132,18 @@ namespace MapleLib.WzLib {
             GC.WaitForPendingFinalizers();
         }
 
+        private void getWzExtensionFiles() {
+            FileInfo wzFileInfo = new FileInfo(mPath);
+            string selFileName = Path.GetFileNameWithoutExtension(wzFileInfo.Name);
+            var extFiles = Directory.GetFiles(wzFileInfo.DirectoryName, selFileName + "*???.wz");
+            foreach (string extFile in extFiles) {
+                if (Regex.IsMatch(extFile, selFileName + ".?[0-9]{3}.wz$", RegexOptions.IgnoreCase))
+                    fileExts.Add(new WzFile(extFile, mFileVersion, mMapleVersion));
+            }
+        }
+
         internal void ParseMainWzDirectory(WzFile parentFile = null) {
+            Console.WriteLine(mPath);
             if (mPath == null) {
                 Console.WriteLine("[Error] Path is null");
                 return;
@@ -165,29 +179,51 @@ namespace MapleLib.WzLib {
                         mReader.BaseStream.Position = position;
                         continue;
                     }
-                    foreach (WzImage s in testDirectory.GetChildImages()) {
-                        if (s.Name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) {
+
+                    WzImage[] childImages = testDirectory.GetChildImages();
+                    if (childImages.Length > 0) {
+                        foreach (WzImage s in childImages) {
+                            if (s.Name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) {
+                                testDirectory.Dispose();
+                                throw new Exception("Invalid file names were detected. An invalid encryption may have been used.");
+                            }
+                        }
+                        WzImage testImage = childImages[0];
+                        try {
+                            mReader.BaseStream.Position = testImage.Offset;
+                            byte checkByte = mReader.ReadByte();
+                            mReader.BaseStream.Position = position;
                             testDirectory.Dispose();
-                            throw new Exception("Invalid file names were detected. An invalid encryption may have been used.");
+                            switch (checkByte) {
+                                case 0x73:
+                                case 0x1b: {
+                                        mHash = mVersionHash;
+                                        ParseDirectory(parentFile);
+                                        return;
+                                    }
+                            }
+                            mReader.BaseStream.Position = position;
+                        } catch {
+                            mReader.BaseStream.Position = position;
                         }
-                    }
-                    WzImage testImage = testDirectory.GetChildImages()[0];
-                    try {
-                        mReader.BaseStream.Position = testImage.Offset;
-                        byte checkByte = mReader.ReadByte();
-                        mReader.BaseStream.Position = position;
-                        testDirectory.Dispose();
-                        switch (checkByte) {
-                            case 0x73:
-                            case 0x1b: {
-                                    mHash = mVersionHash;
-                                    ParseDirectory(parentFile);
-                                    return;
+                    } else {
+                        Boolean hasValidDir = false;
+                        foreach (WzDirectory dir in testDirectory.WzDirectories) {
+                            if (testDirectory.BlockSize == 0 && testDirectory.Checksum == 0) { // external directory
+                                string extDir = Path.Combine(Path.GetDirectoryName(mPath), dir.Name);
+                                if (Directory.Exists(extDir)) {
+                                    hasValidDir = true;
+                                    break;
                                 }
+                            }
                         }
-                        mReader.BaseStream.Position = position;
-                    } catch {
-                        mReader.BaseStream.Position = position;
+                        if (testDirectory.mReader.BaseStream.Position == testDirectory.mReader.BaseStream.Length || hasValidDir) {
+                            mHash = mVersionHash;
+                            mReader.BaseStream.Position = position;
+                            ParseDirectory(this);
+                            return;
+                        }
+                        testDirectory.Dispose();
                     }
                 }
                 throw new Exception("Error with game version hash : The specified game version is incorrect and WzLib was unable to determine the version itself");
@@ -195,7 +231,7 @@ namespace MapleLib.WzLib {
             mVersionHash = GetVersionHash(mVersion, mFileVersion);
             mReader.Hash = mVersionHash;
             mHash = mVersionHash;
-            ParseDirectory(parentFile);
+            ParseDirectory(SubFile ? this : parentFile);
         }
 
         /// <summary>

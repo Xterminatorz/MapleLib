@@ -165,10 +165,23 @@ namespace MapleLib.WzLib {
                 checksum = mReader.ReadCompressedInt();
                 offset = mReader.ReadOffset();
                 if (type == 3) {
-                    WzDirectory subDir = new WzDirectory(mReader, fname, mHash, mWzIv) { BlockSize = fsize, Checksum = checksum, Offset = offset, Parent = parent ?? this };
-                    if (parent != null)
-                        parent.mSubDirs.Add(subDir);
-                    mSubDirs.Add(subDir);
+                    if (parent != null && fsize == 0 && checksum == 0) { // We don't need to parse additional files on test check
+                        string f = Path.Combine(Path.GetDirectoryName(parent.mPath), fname, fname + ".wz");
+                        if (File.Exists(f)) {
+                            WzFile file = new WzFile(f, parent.mFileVersion, parent.mMapleVersion) {
+                                mName = fname,
+                                mParent = this,
+                                SubFile = true
+                            };
+                            file.ParseWzFile();
+                            parent.mSubDirs.Add(file);
+                        }
+                    } else {
+                        WzDirectory subDir = new WzDirectory(mReader, fname, mHash, mWzIv) { BlockSize = fsize, Checksum = checksum, Offset = offset, Parent = parent ?? this };
+                        if (parent != null)
+                            parent.mSubDirs.Add(subDir);
+                        mSubDirs.Add(subDir);
+                    }
                 } else {
                     WzImage img = new WzImage(fname, mReader) { BlockSize = fsize, Checksum = checksum, Offset = offset, Parent = parent ?? this };
                     if (parent != null)
@@ -177,8 +190,10 @@ namespace MapleLib.WzLib {
                 }
             }
             foreach (WzDirectory subdir in mSubDirs) {
-                mReader.BaseStream.Position = subdir.mOffset;
-                subdir.ParseDirectory();
+                if (!(subdir is WzFile)) {
+                    mReader.BaseStream.Position = subdir.mOffset;
+                    subdir.ParseDirectory();
+                }
             }
         }
 
