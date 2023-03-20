@@ -29,8 +29,8 @@ namespace MapleLib.WzLib.WzProperties {
         public override object WzValue {
             get { return GetPNG(); }
             set {
-                if (value is Bitmap)
-                    SetPNG((Bitmap)value);
+                if (value is Bitmap bitmap)
+                    SetPNG(bitmap);
                 else
                     mCompressedBytes = (byte[])value;
             }

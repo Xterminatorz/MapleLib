@@ -124,7 +124,7 @@ namespace MapleLib.WzLib {
                         break;
                     case 9:
                         int eob = (int)(pReader.ReadUInt32() + pReader.BaseStream.Position);
-                        AWzImageProperty exProp = ParseExtendedProp(pReader, pOffset, eob, name, pParent, pParentImg);
+                        AWzImageProperty exProp = ParseExtendedProp(pReader, pOffset, name, pParent, pParentImg);
                         if (exProp != null)
                             properties.Add(exProp);
                         pReader.BaseStream.Position = eob;
@@ -133,26 +133,26 @@ namespace MapleLib.WzLib {
                         properties.Add(new WzCompressedLongProperty(name, pReader.ReadCompressedLong()) { Parent = pParent, ParentImage = pParentImg });
                         break;
                     default:
-                        throw new Exception("Unknown property type at ParsePropertyList: " + b + " name: " + name + " offset: " + pReader.getCurrentOffset());
+                        throw new Exception("Unknown property type at ParsePropertyList: " + b + " name: " + name + " offset: " + pReader.GetCurrentOffset());
                 }
             }
             return properties;
         }
 
-        internal static AWzImageProperty ParseExtendedProp(WzBinaryReader pReader, uint pOffset, int pEndOfBlock, string pName, AWzObject pParent, WzImage pImgParent) {
+        internal static AWzImageProperty ParseExtendedProp(WzBinaryReader pReader, uint pOffset, string pName, AWzObject pParent, WzImage pImgParent) {
             byte b = pReader.ReadByte();
             switch (b) {
                 case 0x1B:
-                    return ExtractMore(pReader, pOffset, pEndOfBlock, pName, pReader.ReadStringAtOffset(pOffset + pReader.ReadInt32()), pParent, pImgParent);
+                    return ExtractMore(pReader, pOffset, pName, pReader.ReadStringAtOffset(pOffset + pReader.ReadInt32()), pParent, pImgParent);
                 case 0x73:
-                    return ExtractMore(pReader, pOffset, pEndOfBlock, pName, pReader.ReadString(), pParent, pImgParent);
+                    return ExtractMore(pReader, pOffset, pName, pReader.ReadString(), pParent, pImgParent);
                 default:
                     return null;
                     //throw new Exception("Invlid type at ParseExtendedProp: " + b);
             }
         }
 
-        internal static AWzImageProperty ExtractMore(WzBinaryReader pReader, uint pOffset, int pEndOfBlock, string pName, string pImageName, AWzObject pParent, WzImage pImgParent) {
+        internal static AWzImageProperty ExtractMore(WzBinaryReader pReader, uint pOffset, string pName, string pImageName, AWzObject pParent, WzImage pImgParent) {
             switch (pImageName) {
                 case "Property":
                     WzSubProperty subProp = new WzSubProperty(pName) { Parent = pParent, ParentImage = pImgParent };
@@ -177,7 +177,7 @@ namespace MapleLib.WzLib {
                     WzConvexProperty convexProp = new WzConvexProperty(pName) { Parent = pParent, ParentImage = pImgParent };
                     int convexEntryCount = pReader.ReadCompressedInt();
                     for (int i = 0; i < convexEntryCount; i++) {
-                        AWzImageProperty imgProp = ParseExtendedProp(pReader, pOffset, 0, pName, convexProp, pImgParent);
+                        AWzImageProperty imgProp = ParseExtendedProp(pReader, pOffset, pName, convexProp, pImgParent);
                         if (imgProp != null)
                             convexProp.AddProperty(imgProp);
                     }

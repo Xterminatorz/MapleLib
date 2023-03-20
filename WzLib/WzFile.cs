@@ -49,8 +49,7 @@ namespace MapleLib.WzLib {
 
         public override void Dispose() {
             base.Dispose();
-            if (mReader != null)
-                mReader.Close();
+            mReader?.Close();
             Header = null;
             mPath = null;
             mName = null;
@@ -113,7 +112,7 @@ namespace MapleLib.WzLib {
         public void ParseWzFile() {
             if (mMapleVersion == WzMapleVersion.GENERATE)
                 throw new InvalidOperationException("Cannot call ParseWzFile() if WZ file type is GENERATE");
-            getWzExtensionFiles();
+            GetWzExtensionFiles();
             ParseMainWzDirectory();
             if (fileExts != null) {
                 foreach (WzFile f in fileExts)
@@ -132,7 +131,7 @@ namespace MapleLib.WzLib {
             GC.WaitForPendingFinalizers();
         }
 
-        private void getWzExtensionFiles() {
+        private void GetWzExtensionFiles() {
             FileInfo wzFileInfo = new FileInfo(mPath);
             string selFileName = Path.GetFileNameWithoutExtension(wzFileInfo.Name);
             var extFiles = Directory.GetFiles(wzFileInfo.DirectoryName, selFileName + "*???.wz");
@@ -143,7 +142,6 @@ namespace MapleLib.WzLib {
         }
 
         internal void ParseMainWzDirectory(WzFile parentFile = null) {
-            Console.WriteLine(mPath);
             if (mPath == null) {
                 Console.WriteLine("[Error] Path is null");
                 return;
@@ -369,8 +367,9 @@ namespace MapleLib.WzLib {
             if (path.ToLower() == mName.ToLower())
                 return new AWzObject[] { this };
             if (path == "*") {
-                List<AWzObject> fullList = new List<AWzObject>();
-                fullList.Add(this);
+                List<AWzObject> fullList = new List<AWzObject> {
+                    this
+                };
                 fullList.AddRange(GetObjectsFromDirectory(this));
                 return fullList.ToArray();
             }
@@ -379,8 +378,8 @@ namespace MapleLib.WzLib {
             string[] seperatedNames = path.Split("/".ToCharArray());
             if (seperatedNames.Length == 2 && seperatedNames[1] == "*")
                 return GetObjectsFromDirectory(this);
-            List<AWzObject> objList = (from img in WzImages from spath in GetPathsFromImage(img, mName + "/" + img.Name) where strMatch(path, spath) select GetObjectFromPath(spath)).ToList();
-            objList.AddRange(from dir in WzDirectories from spath in GetPathsFromDirectory(dir, mName + "/" + dir.Name) where strMatch(path, spath) select GetObjectFromPath(spath));
+            List<AWzObject> objList = (from img in WzImages from spath in GetPathsFromImage(img, mName + "/" + img.Name) where StrMatch(path, spath) select GetObjectFromPath(spath)).ToList();
+            objList.AddRange(from dir in WzDirectories from spath in GetPathsFromDirectory(dir, mName + "/" + dir.Name) where StrMatch(path, spath) select GetObjectFromPath(spath));
             GC.Collect();
             GC.WaitForPendingFinalizers();
             return objList.ToArray();
@@ -533,19 +532,19 @@ namespace MapleLib.WzLib {
             return curObj;
         }
 
-        internal bool strMatch(string strWildCard, string strCompare) {
+        internal bool StrMatch(string strWildCard, string strCompare) {
             if (strWildCard.Length == 0)
                 return strCompare.Length == 0;
             if (strCompare.Length == 0)
                 return false;
             if (strWildCard[0] == '*' && strWildCard.Length > 1)
                 for (int index = 0; index < strCompare.Length; index++) {
-                    if (strMatch(strWildCard.Substring(1), strCompare.Substring(index)))
+                    if (StrMatch(strWildCard.Substring(1), strCompare.Substring(index)))
                         return true;
                 } else if (strWildCard[0] == '*')
                 return true;
             else if (strWildCard[0] == strCompare[0])
-                return strMatch(strWildCard.Substring(1), strCompare.Substring(1));
+                return StrMatch(strWildCard.Substring(1), strCompare.Substring(1));
             return false;
         }
 

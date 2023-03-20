@@ -178,14 +178,12 @@ namespace MapleLib.WzLib {
                         }
                     } else {
                         WzDirectory subDir = new WzDirectory(mReader, fname, mHash, mWzIv) { BlockSize = fsize, Checksum = checksum, Offset = offset, Parent = parent ?? this };
-                        if (parent != null)
-                            parent.mSubDirs.Add(subDir);
+                        parent?.mSubDirs.Add(subDir);
                         mSubDirs.Add(subDir);
                     }
                 } else {
                     WzImage img = new WzImage(fname, mReader) { BlockSize = fsize, Checksum = checksum, Offset = offset, Parent = parent ?? this };
-                    if (parent != null)
-                        parent.mImages.Add(img);
+                    parent?.mImages.Add(img);
                     mImages.Add(img);
                 }
             }

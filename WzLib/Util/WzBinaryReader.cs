@@ -10,7 +10,7 @@ namespace MapleLib.WzLib.Util {
         public byte[] WzKey { get; private set; }
         public uint Hash { get; set; }
         public WzHeader Header { get; set; }
-        private bool noEncryption { get; set; }
+        private bool NoEncryption { get; set; }
 
         #endregion
 
@@ -18,7 +18,7 @@ namespace MapleLib.WzLib.Util {
 
         public WzBinaryReader(Stream pInput, byte[] pWzIv, bool setKey = false) : base(pInput) {
             WzKey = setKey ? pWzIv : WzKeyGenerator.GenerateWzKey(pWzIv);
-            noEncryption = WzKey.All(singleByte => singleByte == 0);
+            NoEncryption = WzKey.All(singleByte => singleByte == 0);
         }
 
         #endregion
@@ -52,7 +52,7 @@ namespace MapleLib.WzLib.Util {
                 if (length <= 0) {
                     return string.Empty;
                 }
-                if (noEncryption) {
+                if (NoEncryption) {
                     for (int i = 0; i < length; i++) {
                         ushort encryptedChar = ReadUInt16();
                         encryptedChar ^= mask;
@@ -79,7 +79,7 @@ namespace MapleLib.WzLib.Util {
                 if (length <= 0) {
                     return string.Empty;
                 }
-                if (noEncryption) {
+                if (NoEncryption) {
                     for (int i = 0; i < length; i++) {
                         byte encryptedChar = ReadByte();
                         encryptedChar ^= mask;
@@ -99,7 +99,7 @@ namespace MapleLib.WzLib.Util {
             return retString.ToString();
         }
 
-        public long getCurrentOffset() {
+        public long GetCurrentOffset() {
             return base.BaseStream.Position;
         }
 
