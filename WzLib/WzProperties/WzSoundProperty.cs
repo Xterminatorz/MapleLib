@@ -191,8 +191,8 @@ namespace MapleLib.WzLib.WzProperties {
             mWzReader.BaseStream.Position = mOffsets;
             int soundDataLen = mWzReader.ReadCompressedInt();
             mWzReader.ReadCompressedInt();
-            if (wavFormat != null && wavFormat.Encoding == WaveFormatEncoding.Pcm) {
-                mWzReader.BaseStream.Position += headerLen;
+            mWzReader.BaseStream.Position += headerLen;
+            if (wavFormat != null && wavFormat.Encoding == WaveFormatEncoding.Pcm && wavFormat.SampleRate != soundDataLen && wavFormat.SampleRate != wavFormat.AverageBytesPerSecond) {
                 byte[] soundData = mWzReader.ReadBytes(soundDataLen);
                 using (MemoryStream ms = new MemoryStream()) {
                     using (WaveFileWriter writer = new WaveFileWriter(ms, wavFormat)) {
@@ -201,7 +201,7 @@ namespace MapleLib.WzLib.WzProperties {
                     mMp3bytes = ms.ToArray();
                 }
             } else {
-                mMp3bytes = mWzReader.ReadBytes(headerLen + soundDataLen);
+                mMp3bytes = mWzReader.ReadBytes(soundDataLen);
             }
             mWzReader.BaseStream.Position = currentPos;
             if (pSaveInMemory)
@@ -215,9 +215,13 @@ namespace MapleLib.WzLib.WzProperties {
             File.WriteAllBytes(pFilePath, GetBytes());
         }
         public string GetExtension() {
-            if (wavFormat != null && wavFormat.Encoding == WaveFormatEncoding.Pcm)
+            if (wavFormat != null && wavFormat.Encoding == WaveFormatEncoding.MpegLayer3)
+                return ".mp3";
+            if (mName.Equals("FONT_DATA"))
+                return ".ttf";
+            if (wavFormat != null && wavFormat.Encoding == WaveFormatEncoding.Pcm && wavFormat.SampleRate != wavFormat.AverageBytesPerSecond)
                 return ".wav";
-            return ".mp3";
+            return "";
         }
 
         #endregion
