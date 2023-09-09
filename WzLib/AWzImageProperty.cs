@@ -168,6 +168,10 @@ namespace MapleLib.WzLib {
                     }
                     canvasProp.PngProperty = new WzPngProperty(pReader) { Parent = canvasProp, ParentImage = pImgParent };
                     return canvasProp;
+                case "RawData":
+                    WzRawDataProperty rawData = new WzRawDataProperty(pName) { Parent = pParent, ParentImage = pImgParent };
+                    rawData.ParseRawData(pReader);
+                    return rawData;
                 case "Shape2D#Vector2D":
                     WzVectorProperty vecProp = new WzVectorProperty(pName) { Parent = pParent, ParentImage = pImgParent };
                     vecProp.X = new WzCompressedIntProperty("X", pReader.ReadCompressedInt()) { Parent = vecProp, ParentImage = pImgParent };
