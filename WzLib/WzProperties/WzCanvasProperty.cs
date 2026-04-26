@@ -7,10 +7,9 @@ namespace MapleLib.WzLib.WzProperties {
     /// <summary>
     /// A property that can contain sub properties and has one png image
     /// </summary>
-    public class WzCanvasProperty : APropertyContainer {
+    public class WzCanvasProperty : AWzImageProperty {
         #region Fields
 
-        internal List<AWzImageProperty> mProperties = new List<AWzImageProperty>();
         internal WzPngProperty mImageProp;
         internal string mName;
         internal AWzObject mParent;
@@ -40,11 +39,6 @@ namespace MapleLib.WzLib.WzProperties {
         /// The WzPropertyType of the property
         /// </summary>
         public override WzPropertyType PropertyType { get { return WzPropertyType.Canvas; } }
-
-        /// <summary>
-        /// The properties contained in this property
-        /// </summary>
-        public override List<AWzImageProperty> WzProperties { get { return mProperties; } }
 
         /// <summary>
         /// The inlink contained in this property
@@ -179,16 +173,16 @@ namespace MapleLib.WzLib.WzProperties {
         public override void WriteValue(WzBinaryWriter pWriter) {
             pWriter.WriteStringValue("Canvas", 0x73, 0x1B);
             pWriter.Write((byte)0);
-            if (mProperties.Count > 0) {
+            if (WzProperties.Count > 0) {
                 pWriter.Write((byte)1);
-                WritePropertyList(pWriter, mProperties);
+                WritePropertyList(pWriter, WzProperties);
             } else {
                 pWriter.Write((byte)0);
             }
             pWriter.WriteCompressedInt(PngProperty.Width);
             pWriter.WriteCompressedInt(PngProperty.Height);
             pWriter.WriteCompressedInt(PngProperty.mFormat);
-            pWriter.Write((byte)PngProperty.mFormat2);
+            pWriter.Write((byte)PngProperty.mScale);
             pWriter.Write(0);
             byte[] bytes = PngProperty.GetCompressedBytes();
             pWriter.Write(bytes.Length + 1);
@@ -215,11 +209,10 @@ namespace MapleLib.WzLib.WzProperties {
             _outlinkValue = null;
             mImageProp.Dispose();
             mImageProp = null;
-            foreach (AWzImageProperty prop in mProperties) {
+            foreach (AWzImageProperty prop in WzProperties) {
                 prop.Dispose();
             }
-            mProperties.Clear();
-            mProperties = null;
+            WzProperties.Clear();
         }
 
         #endregion

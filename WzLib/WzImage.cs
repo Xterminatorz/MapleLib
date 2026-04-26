@@ -69,7 +69,7 @@ namespace MapleLib.WzLib {
                 if (mReader != null && !mParsed) {
                     ParseImage();
                 }
-                return mProperties;
+                return base.WzProperties;
             }
         }
 
@@ -82,7 +82,7 @@ namespace MapleLib.WzLib {
             get {
                 if (mReader != null && !mParsed)
                     ParseImage();
-                return mProperties.FirstOrDefault(iwp => iwp.Name.ToLower() == pName.ToLower());
+                return base.WzProperties.FirstOrDefault(iwp => iwp.Name.ToLower() == pName.ToLower());
             }
         }
 
@@ -133,11 +133,11 @@ namespace MapleLib.WzLib {
         }*/
 
         public void PartialDispose() {
-            if (mProperties == null)
+            if (base.WzProperties.Count == 0)
                 return;
-            foreach (AWzImageProperty prop in mProperties)
+            foreach (AWzImageProperty prop in base.WzProperties)
                 prop.Dispose();
-            mProperties.Clear();
+            base.WzProperties.Clear();
             foreach (WzImage img in referencedImgs)
                 img.PartialDispose();
             referencedImgs.Clear();
@@ -148,11 +148,10 @@ namespace MapleLib.WzLib {
         public override void Dispose() {
             mName = null;
             mReader = null;
-            if (mProperties != null) {
-                foreach (AWzImageProperty prop in mProperties)
+            if (base.WzProperties.Count != 0) {
+                foreach (AWzImageProperty prop in base.WzProperties)
                     prop.Dispose();
-                mProperties.Clear();
-                mProperties = null;
+                base.WzProperties.Clear();
             }
             if (referencedImgs != null) {
                 foreach (WzImage img in referencedImgs)
@@ -175,7 +174,7 @@ namespace MapleLib.WzLib {
             if (b != 0x73 || mReader.ReadString() != "Property" || mReader.ReadUInt16() != 0)
                 return;
             List<AWzImageProperty> properties = ParsePropertyList(mOffset, mReader, this, this);
-            mProperties.AddRange(properties);
+            base.WzProperties.AddRange(properties);
             properties.Clear();
             mParsed = true;
         }
@@ -193,7 +192,7 @@ namespace MapleLib.WzLib {
 
         public void UnparseImage() {
             mParsed = false;
-            mProperties = new List<AWzImageProperty>();
+            base.WzProperties.Clear();
         }
 
         public void AddReferencedImage(WzImage img) {

@@ -21,12 +21,13 @@
         Sound = 0x800,
         UOL = 0x1000,
         RawData = 0x2000,
+        Video = 0x4000,
 
         #endregion
 
         #region Png
 
-        PNG = 0x4000,
+        PNG = 0x8000,
 
         #endregion
     }

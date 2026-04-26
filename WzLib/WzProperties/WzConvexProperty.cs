@@ -7,10 +7,9 @@ namespace MapleLib.WzLib.WzProperties {
     /// <summary>
     /// A property that contains several WzExtendedPropertys
     /// </summary>
-    public class WzConvexProperty : APropertyContainer {
+    public class WzConvexProperty : AWzImageProperty {
         #region Fields
 
-        internal List<AWzImageProperty> mProperties = new List<AWzImageProperty>();
         internal string mName;
         internal AWzObject mParent;
         internal WzImage mImgParent;
@@ -35,11 +34,6 @@ namespace MapleLib.WzLib.WzProperties {
         public override WzPropertyType PropertyType { get { return WzPropertyType.Convex; } }
 
         /// <summary>
-        /// The properties contained in the property
-        /// </summary>
-        public override List<AWzImageProperty> WzProperties { get { return mProperties; } }
-
-        /// <summary>
         /// The name of this property
         /// </summary>
         public override string Name { get { return mName; } set { mName = value; } }
@@ -48,8 +42,8 @@ namespace MapleLib.WzLib.WzProperties {
 
         public override void WriteValue(WzBinaryWriter pWriter) {
             pWriter.WriteStringValue("Shape2D#Convex2D", 0x73, 0x1B);
-            pWriter.WriteCompressedInt(mProperties.Count);
-            foreach (AWzImageProperty prop in mProperties) {
+            pWriter.WriteCompressedInt(WzProperties.Count);
+            foreach (AWzImageProperty prop in WzProperties) {
                 prop.WriteValue(pWriter);
             }
         }
@@ -62,10 +56,9 @@ namespace MapleLib.WzLib.WzProperties {
 
         public override void Dispose() {
             mName = null;
-            foreach (AWzImageProperty prop in mProperties)
+            foreach (AWzImageProperty prop in WzProperties)
                 prop.Dispose();
-            mProperties.Clear();
-            mProperties = null;
+            WzProperties.Clear();
         }
 
         public override void AddProperty(AWzImageProperty pProp) {

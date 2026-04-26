@@ -21,9 +21,9 @@ namespace MapleLib.WzLib.WzProperties {
         public override object WzValue {
             get { return new Point(x.Value, y.Value); }
             set {
-                if (value is Point) {
-                    x.mVal = ((Point)value).X;
-                    y.mVal = ((Point)value).Y;
+                if (value is Point point) {
+                    x.mVal = point.X;
+                    y.mVal = point.Y;
                 } else {
                     x.mVal = ((Size)value).Width;
                     y.mVal = ((Size)value).Height;

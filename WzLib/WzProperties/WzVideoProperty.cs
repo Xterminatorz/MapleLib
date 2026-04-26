@@ -1,6 +1,7 @@
 ﻿using MapleLib.WzLib.Util;
 using NAudio.Wave;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
@@ -12,7 +13,7 @@ namespace MapleLib.WzLib.WzProperties
     /// <summary>
     /// A property that contains raw data
     /// </summary>
-    public class WzRawDataProperty : AWzImageProperty, IExtended
+    public class WzVideoProperty : AWzImageProperty, IExtended
     {
         #region Fields
 
@@ -52,18 +53,18 @@ namespace MapleLib.WzLib.WzProperties
         /// <summary>
         /// The WzPropertyType of the property
         /// </summary>
-        public override WzPropertyType PropertyType { get { return WzPropertyType.RawData; } }
+        public override WzPropertyType PropertyType { get { return WzPropertyType.Video; } }
 
         public override void WriteValue(WzBinaryWriter pWriter) {
             byte[] data = GetBytes();
-            pWriter.WriteStringValue("RawData", 0x73, 0x1B);
+            pWriter.WriteStringValue("Canvas#Video", 0x73, 0x1B);
             pWriter.Write((byte)0);
             pWriter.WriteCompressedInt(data.Length);
             pWriter.Write(data);
         }
 
         public override void ExportXml(StreamWriter pWriter, int pLevel) {
-            pWriter.WriteLine(XmlUtil.Indentation(pLevel) + XmlUtil.EmptyNamedTag("RawData", Name));
+            pWriter.WriteLine(XmlUtil.Indentation(pLevel) + XmlUtil.EmptyNamedTag("Canvas#Video", Name));
         }
 
         /// <summary>
@@ -81,14 +82,14 @@ namespace MapleLib.WzLib.WzProperties
         /// <summary>
         /// Creates a blank WzRawDataProperty
         /// </summary>
-        public WzRawDataProperty() {
+        public WzVideoProperty() {
         }
 
         /// <summary>
         /// Creates a WzRawDataProperty with the specified name
         /// </summary>
         /// <param name="pName">The name of the property</param>
-        public WzRawDataProperty(string pName) {
+        public WzVideoProperty(string pName) {
             mName = pName;
         }
 
@@ -101,14 +102,14 @@ namespace MapleLib.WzLib.WzProperties
         #region Parsing Methods
 
 
-        internal void ParseRawData(WzBinaryReader pReader) {
+        internal void ParseVideo(WzBinaryReader pReader) {
+            pReader.BaseStream.Position++;
             int rawDataVer = pReader.ReadByte();
             if (rawDataVer == 1) {  // introduced in KMST 1177
-                if (pReader.ReadByte() == 1) {  // read sub properties
-                    pReader.BaseStream.Position += 2;
-                    AddProperties(ParsePropertyList(ParentImage.Offset, pReader, this, mImgParent));
-                }
+                pReader.BaseStream.Position += 2;
+                AddProperties(ParsePropertyList(ParentImage.Offset, pReader, this, mImgParent));
             }
+            pReader.BaseStream.Position++;
             mOffsets = pReader.BaseStream.Position;
             int dataLen = pReader.ReadCompressedInt();
             pReader.BaseStream.Position += dataLen;

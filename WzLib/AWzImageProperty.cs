@@ -4,12 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 
 namespace MapleLib.WzLib {
     /// <summary>
     /// An interface for wz img properties
     /// </summary>
     public abstract class AWzImageProperty : AWzObject {
+
+        private readonly Lazy<List<AWzImageProperty>> wzProperties = new Lazy<List<AWzImageProperty>>();
         public override WzObjectType ObjectType { get { return WzObjectType.Property; } }
 
         public abstract WzPropertyType PropertyType { get; }
@@ -23,9 +26,43 @@ namespace MapleLib.WzLib {
             pWriter.WriteLine(XmlUtil.Indentation(pLevel) + XmlUtil.CloseTag(PropertyType.ToString()));
         }
 
-        public virtual List<AWzImageProperty> WzProperties { get { return null; } }
+        /// <summary>
+        /// The properties contained in the property
+        /// </summary>
+        public virtual List<AWzImageProperty> WzProperties { get { return wzProperties.Value; } }
 
-        public virtual AWzImageProperty this[string pName] { get { return null; } }
+        public virtual void AddProperty(AWzImageProperty pProp) {
+            pProp.Parent = this;
+            pProp.ParentImage = ParentImage;
+            WzProperties.Add(pProp);
+        }
+
+        public virtual void AddProperties(List<AWzImageProperty> pProps) {
+            foreach (AWzImageProperty prop in pProps) {
+                AddProperty(prop);
+            }
+            pProps.Clear();
+        }
+
+        public virtual void RemoveProperty(AWzImageProperty pProp) {
+            WzProperties.Remove(pProp);
+        }
+
+        public virtual void ClearProperties() {
+            WzProperties.Clear();
+        }
+
+        public virtual AWzImageProperty this[string pName] {
+            get {
+                foreach (AWzImageProperty prop in WzProperties)
+                    if (pName == "PNG" && prop is WzCanvasProperty) {
+                        return prop.ToPngProperty();
+                    } else if (prop.Name.ToLower() == pName.ToLower()) {
+                        return prop;
+                    }
+                return null;
+            }
+        }
 
         /// <summary>
         /// Gets a wz property by a path name
@@ -38,7 +75,7 @@ namespace MapleLib.WzLib {
                 return ((AWzImageProperty)Parent)[pPath.Substring(Name.IndexOf('/') + 1)];
             }
             AWzImageProperty ret = this;
-            if (ret.WzProperties == null) {
+            if (WzProperties.Count == 0) {
                 return null;
             }
             foreach (string t in segments) {
@@ -168,6 +205,10 @@ namespace MapleLib.WzLib {
                     }
                     canvasProp.PngProperty = new WzPngProperty(pReader) { Parent = canvasProp, ParentImage = pImgParent };
                     return canvasProp;
+                case "Canvas#Video": // introduced in KMST v1181
+                    WzVideoProperty videoProp = new WzVideoProperty(pName) { Parent = pParent, ParentImage = pImgParent };
+                    videoProp.ParseVideo(pReader);
+                    return videoProp;
                 case "RawData":
                     WzRawDataProperty rawData = new WzRawDataProperty(pName) { Parent = pParent, ParentImage = pImgParent };
                     rawData.ParseRawData(pReader);

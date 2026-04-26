@@ -36,7 +36,7 @@ namespace MapleLib.WzLib.WzProperties {
         /// </summary>
         public override string Name { get { return mName; } set { mName = value; } }
 
-        public override List<AWzImageProperty> WzProperties { get { return LinkValue != null ? LinkValue.WzProperties : null; } }
+        public override List<AWzImageProperty> WzProperties { get { return LinkValue?.WzProperties; } }
 
         public override AWzImageProperty this[string pName] { get { return LinkValue[pName]; } }
 

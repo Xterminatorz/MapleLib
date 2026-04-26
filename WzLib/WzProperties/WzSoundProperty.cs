@@ -166,7 +166,15 @@ namespace MapleLib.WzLib.WzProperties {
         }
 
         internal void ParseSound(WzBinaryReader pReader) {
-            pReader.BaseStream.Position++;
+            int soundDX8Ver = pReader.ReadByte();
+            if (soundDX8Ver == 1) { // introduced in KMST 1184
+                // read sub properties
+                // MobPattern.img/1043/001 is an example that has this
+                if (pReader.ReadByte() == 1) {
+                    pReader.BaseStream.Position += 2;
+                    AddProperties(ParsePropertyList(ParentImage.Offset, pReader, this, mImgParent));
+                }
+            }
             mOffsets = pReader.BaseStream.Position;
             int soundDataLen = pReader.ReadCompressedInt();
             mLenMs = pReader.ReadCompressedInt();

@@ -6,10 +6,9 @@ namespace MapleLib.WzLib.WzProperties {
     /// <summary>
     /// A property that contains a set of properties
     /// </summary>
-    public class WzSubProperty : APropertyContainer, IExtended {
+    public class WzSubProperty : AWzImageProperty, IExtended {
         #region Fields
 
-        internal List<AWzImageProperty> mProperties = new List<AWzImageProperty>();
         internal string mName;
         internal AWzObject mParent;
         internal WzImage mImgParent;
@@ -34,11 +33,6 @@ namespace MapleLib.WzLib.WzProperties {
         public override WzPropertyType PropertyType { get { return WzPropertyType.SubProperty; } }
 
         /// <summary>
-        /// The wz properties contained in the property
-        /// </summary>
-        public override List<AWzImageProperty> WzProperties { get { return mProperties; } }
-
-        /// <summary>
         /// The name of the property
         /// </summary>
         public override string Name { get { return mName; } set { mName = value; } }
@@ -47,7 +41,7 @@ namespace MapleLib.WzLib.WzProperties {
 
         public override void WriteValue(WzBinaryWriter pWriter) {
             pWriter.WriteStringValue("Property", 0x73, 0x1B);
-            WritePropertyList(pWriter, mProperties);
+            WritePropertyList(pWriter, WzProperties);
         }
 
         public override void ExportXml(StreamWriter pWriter, int pLevel) {
@@ -61,10 +55,9 @@ namespace MapleLib.WzLib.WzProperties {
         /// </summary>
         public override void Dispose() {
             mName = null;
-            foreach (AWzImageProperty prop in mProperties)
+            foreach (AWzImageProperty prop in WzProperties)
                 prop.Dispose();
-            mProperties.Clear();
-            mProperties = null;
+            WzProperties.Clear();
         }
 
         #endregion
